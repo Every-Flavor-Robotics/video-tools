@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, Form, Depends
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from concurrent.futures import ProcessPoolExecutor
 import uuid
 import os
@@ -8,8 +9,17 @@ from app.tasks import process_job
 from app.models import SessionLocal, Job
 from app.cleanup import start_cleanup_task
 import threading
+from app.appconfig import AppConfig
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Update with your Next.js URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 RESULT_DIR = "app/temp"
 os.makedirs(RESULT_DIR, exist_ok=True)
@@ -114,12 +124,15 @@ async def update_settings(
     cleanup_interval: int = Form(60),
     retention_period: int = Form(3600),
 ):
-    global CLEANUP_INTERVAL, RETENTION_PERIOD
-    CLEANUP_INTERVAL = cleanup_interval
-    RETENTION_PERIOD = retention_period
-    return {
-        "resolution": resolution,
-        "quality": quality,
-        "cleanup_interval": cleanup_interval,
-        "retention_period": retention_period,
-    }
+    config = AppConfig()
+    config.resolution = resolution
+    config.quality = quality
+    config.cleanup_interval = cleanup_interval
+    config.retention_period = retention_period
+
+    return config.get_settings()
+
+
+@app.get("/settings/")
+async def get_settings():
+    return AppConfig().get_settings()

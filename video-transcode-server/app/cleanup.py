@@ -3,11 +3,7 @@ import time
 from datetime import datetime, timedelta
 from app.models import SessionLocal, Job
 import threading
-
-# Configuration
-RESULT_DIR = "app/temp"
-CLEANUP_INTERVAL = 60  # Check every 60 seconds
-RETENTION_PERIOD = 3600  # Keep jobs for 1 hour (3600 seconds)
+from app.appconfig import AppConfig
 
 
 def cleanup_completed_jobs():
@@ -16,11 +12,16 @@ def cleanup_completed_jobs():
     """
     while True:
         try:
+            # Access the singleton instance
+            config = AppConfig()
+
             # Create a database session
             db = SessionLocal()
 
             # Calculate expiration time
-            expiration_time = datetime.now() - timedelta(seconds=RETENTION_PERIOD)
+            expiration_time = datetime.now() - timedelta(
+                seconds=config.retention_period
+            )
 
             # Find completed jobs older than retention period
             jobs_to_delete = (
@@ -50,7 +51,7 @@ def cleanup_completed_jobs():
             db.close()
 
         # Wait before the next cleanup run
-        time.sleep(CLEANUP_INTERVAL)
+        time.sleep(config.cleanup_interval)
 
 
 # Start cleanup routine as a background thread
