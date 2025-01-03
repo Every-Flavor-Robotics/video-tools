@@ -1,0 +1,18 @@
+version: "3.3"
+
+services:
+  video-proxy:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app/temp:/app/temp
+      - data:/app/data
+    deploy:
+      resources:
+        limits:
+          cpus: "8.0"
+          memory: "12G"
+
+volumes:
+  data:
